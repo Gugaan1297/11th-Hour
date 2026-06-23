@@ -1,0 +1,8 @@
+{
+  "name": "11th Hour",
+  "description": "An aggressive, hyper-proactive productivity assistant that syncs with Google Calendar and Gmail to salvage tight deadlines, draft pre-work, schedule focus time-blocks, and prioritize chaotic workloads.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
