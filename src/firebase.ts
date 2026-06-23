@@ -13,11 +13,12 @@ try {
 }
 
 const provider = new GoogleAuthProvider();
-// Request Calendar and Gmail scopes
+// Request Calendar, Gmail and Documents scopes
 provider.addScope('https://www.googleapis.com/auth/calendar');
 provider.addScope('https://www.googleapis.com/auth/calendar.events');
 provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
 provider.addScope('https://www.googleapis.com/auth/gmail.compose');
+provider.addScope('https://www.googleapis.com/auth/documents');
 
 // Flag to indicate if we are in the middle of a sign-in flow.
 let isSigningIn = false;

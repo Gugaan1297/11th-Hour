@@ -211,3 +211,62 @@ export async function sendGmailMessage(
 
   return response.json();
 }
+
+/**
+ * Creates a Google Document with specified title and content
+ */
+export async function createGoogleDoc(
+  accessToken: string,
+  title: string,
+  content: string
+): Promise<{ documentId: string; documentUrl: string }> {
+  const createUrl = 'https://docs.googleapis.com/v1/documents';
+  const createResponse = await fetch(createUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ title }),
+  });
+
+  if (!createResponse.ok) {
+    const errText = await createResponse.text();
+    throw new Error(`Google Docs creation failed: ${errText}`);
+  }
+
+  const doc = await createResponse.json();
+  const documentId = doc.documentId;
+
+  // Insert content text into the newly created document using batchUpdate
+  const updateUrl = `https://docs.googleapis.com/v1/documents/${documentId}:batchUpdate`;
+  const requests = [
+    {
+      insertText: {
+        location: {
+          index: 1,
+        },
+        text: content,
+      },
+    },
+  ];
+
+  const updateResponse = await fetch(updateUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ requests }),
+  });
+
+  if (!updateResponse.ok) {
+    const errText = await updateResponse.text();
+    throw new Error(`Google Docs Populate failed: ${errText}`);
+  }
+
+  return {
+    documentId,
+    documentUrl: `https://docs.google.com/document/d/${documentId}/edit`,
+  };
+}

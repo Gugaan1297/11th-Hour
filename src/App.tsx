@@ -36,7 +36,8 @@ import {
   fetchCalendarEvents, 
   createCalendarEvent, 
   fetchGmailMessages, 
-  sendGmailMessage 
+  sendGmailMessage,
+  createGoogleDoc
 } from "./googleApi";
 import { 
   CalendarEvent, 
@@ -125,7 +126,12 @@ export default function App() {
   ];
 
   // Active section tracking (tabs)
-  const [activeTab, setActiveTab] = useState<'scheduler' | 'inbox' | 'drafts'>("scheduler");
+  const [activeTab, setActiveTab] = useState<'scheduler' | 'inbox' | 'drafts' | 'docs'>("scheduler");
+
+  // Google Docs Creation States
+  const [isCreatingDoc, setIsCreatingDoc] = useState<boolean>(false);
+  const [createdDocUrl, setCreatedDocUrl] = useState<string | null>(null);
+  const [docError, setDocError] = useState<string | null>(null);
 
   // Floating Toast Notifications to replace iframe-restricted window.alert
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -362,6 +368,72 @@ export default function App() {
     } finally {
       setModalTarget(null);
       setCalendarPayload(null);
+    }
+  };
+
+  // Google Docs Creation
+  const handleCreateDoc = async () => {
+    if (!token) {
+      showToast("Access token not found. Please log in first.", "error");
+      return;
+    }
+    setIsCreatingDoc(true);
+    setDocError(null);
+    setCreatedDocUrl(null);
+
+    const title = "11th Hour - Project Technical Brief & Solution Overview";
+    const documentBody = 
+`=========================================
+11TH HOUR - PROJECT TECHNICAL SUMMARY BRIEF
+=========================================
+
+1. PROBLEM STATEMENT SELECTED
+-----------------------------------------
+Busy, overwhelmed, or highly stressed professionals and students frequently find themselves in "11th Hour" crisis situations. Under extreme deadline pressure or cognitive overwhelm, cognitive load skyrockets, leading to decision paralysis, mental blocks, and an inability to take action. Traditional task managers require proactive planning, which adds of additional cognitive load when a user is already drowning.
+
+2. SOLUTION OVERVIEW
+-----------------------------------------
+"11th Hour" is an immersive, high-execution, full-stack AI-driven tactical control center and stress recovery framework. By integrating directly with real Google Workspace components (Gmail & Calendar), the system minimizes friction and automates support. It allows users to vent their stress in raw, unstructured sentences. The backend AI parses the input to construct a step-by-step master timeline, generate summaries, configure focus slots, and analyze incoming deadlines.
+
+3. KEY FEATURES
+-----------------------------------------
+- Proactive Critical Coach: Conversational stress parser utilizing Google Gemini to turn raw anxiety into bulleted, hour-by-hour tactical actions.
+- Calendar Focus Scheduler: Instantly schedules time-managed priority blocks directly into the user's Google Calendar.
+- Gmail Deadline Audit: Pasively scans messages for hidden, upcoming deadlines (exams, deliverables, meetings) and recommends critical interventions.
+- Drafting Studio: Auto-generates study prep sheets and polite extension draft requests, allowing single-click email delivery.
+- Google Docs Archiver: Directly exports project details and generated logs into clean, permanent Google Documents.
+
+4. TECHNOLOGIES USED
+-----------------------------------------
+- Frontend Framework: React (v18), Vite
+- Styling & Layout: Tailwind CSS, Lucide Icons
+- Motion & Interactions: Framer Motion
+- Authentication: Firebase Auth (Federated Google Provider)
+- Backend Hosting & API Proxies: Node.js, Express (TypeScript)
+
+5. GOOGLE TECHNOLOGIES UTILIZED
+-----------------------------------------
+- Google Gemini API: Powering the stress parsing, coaching logic, and drafting studio content.
+- Google Documents API: Direct authorization and compilation of research brief documents.
+- Google Calendar API: Integrating time slots and calendar meetings.
+- Gmail API: Auditing messages and transmitting draft proposals.
+- Firebase Auth: Secure, client-credentials federated identity provider.
+
+-----------------------------------------
+Document compiled on: ${new Date().toLocaleString()}
+Thank you for using 11th Hour!
+=========================================`;
+
+    try {
+      const result = await createGoogleDoc(token, title, documentBody);
+      setCreatedDocUrl(result.documentUrl);
+      showToast("Google Doc published successfully!", "success");
+    } catch (err: any) {
+      console.error(err);
+      setDocError(err.message || "Failed to create Google Document.");
+      showToast("Failed to publish Google Doc: " + err.message, "error");
+    } finally {
+      setIsCreatingDoc(false);
     }
   };
 
@@ -843,6 +915,17 @@ export default function App() {
                     >
                       <Sparkles className="w-4 h-4 text-cyan-400" /> Drafting Studio
                     </button>
+                    <button
+                      id="tab-docs"
+                      onClick={() => setActiveTab("docs")}
+                      className={`flex-1 py-4 text-xs font-bold tracking-tight uppercase flex items-center justify-center gap-2 transition cursor-pointer border-b-2 ${
+                        activeTab === "docs" 
+                          ? "border-cyan-500 text-white bg-white/5" 
+                          : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                      }`}
+                    >
+                      <FileText className="w-4 h-4 text-cyan-400" /> Docs Studio
+                    </button>
                   </div>
 
                   <div className="p-6 min-h-[400px]">
@@ -1225,6 +1308,124 @@ export default function App() {
                               )}
                             </div>
 
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {activeTab === "docs" && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="space-y-6"
+                      >
+                        <div className="space-y-3">
+                          <span className="text-[10px] font-mono tracking-widest uppercase text-cyan-400 block font-bold">
+                            GOOGLE DOCS SYSTEM INTERNALS & TECHNICAL BRIEF ARCHIVER
+                          </span>
+
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                            {/* Technical brief details preview */}
+                            <div className="md:col-span-7 space-y-4">
+                              <div className="p-5 bg-black/40 border border-white/10 rounded-2xl space-y-4">
+                                <h4 className="text-sm font-bold text-white uppercase border-b border-white/10 pb-2 flex items-center gap-2">
+                                  <FileText className="w-4 h-4 text-cyan-400" /> Document Content Preview
+                                </h4>
+
+                                <div className="space-y-4 text-xs max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                                  <div>
+                                    <h5 className="font-bold text-cyan-400 uppercase font-mono text-[10px]">1. Problem Statement Selected</h5>
+                                    <p className="text-slate-300 mt-1 leading-relaxed">
+                                      Busy, overwhelmed, or highly stressed professionals and students drowning in high-friction "11th Hour" situations suffer from deadline overwhelm, task paralysis, and severe cognitive load.
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <h5 className="font-bold text-cyan-400 uppercase font-mono text-[10px]">2. Solution Overview</h5>
+                                    <p className="text-slate-300 mt-1 leading-relaxed">
+                                      "11th Hour" is a fully modular full-stack AI-driven tactical control center and survival console. By integrating cleanly with active Google Workspace configurations (Gmail & Calendar), the system minimizes visual noise and parses raw, unformatted workload venting into step-by-step master timelines, priority time-slots, and context prework drafts.
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <h5 className="font-bold text-cyan-400 uppercase font-mono text-[10px]">3. Key Features</h5>
+                                    <ul className="list-disc pl-4 text-slate-300 space-y-1 mt-1 leading-relaxed">
+                                      <li><strong>Critical Coach:</strong> Unstructured stress parser utilizing Google Gemini to form hour-by-hour actionable plans.</li>
+                                      <li><strong>Calendar Focus Scheduler:</strong> Formulates and populates time-managed slots into Google Calendar directly.</li>
+                                      <li><strong>Gmail Deadline Audit:</strong> Scans immediate messages to flag undetected deadlines.</li>
+                                      <li><strong>Drafting Studio:</strong> Pre-compiles study sheets and polite request letters.</li>
+                                      <li><strong>Docs Platform Archiver:</strong> Direct-to-Drive export of complete custom brief summaries.</li>
+                                    </ul>
+                                  </div>
+
+                                  <div>
+                                    <h5 className="font-bold text-cyan-400 uppercase font-mono text-[10px]">4. Technologies Used</h5>
+                                    <p className="text-slate-300 mt-1 font-mono leading-relaxed">
+                                      React 18, Vite, Tailwind CSS, Framer Motion, TypeScript, Node.js + Express, Firebase Authentication.
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <h5 className="font-bold text-cyan-400 uppercase font-mono text-[10px]">5. Google Platforms Utilized</h5>
+                                    <p className="text-slate-300 mt-1 font-mono leading-relaxed">
+                                      Google Gemini API, Google Documents API, Google Calendar API, Gmail API, Firebase Federated OAuth.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Export / Creation panel */}
+                            <div className="md:col-span-5 space-y-4">
+                              <div className="p-5 bg-black/40 border border-white/10 rounded-2xl space-y-4 text-center">
+                                <FileText className="w-12 h-12 text-cyan-500 mx-auto animate-pulse" />
+                                <h4 className="text-sm font-bold text-white uppercase">Export Brief to Google Drive</h4>
+                                <p className="text-slate-400 text-xs leading-relaxed">
+                                  Save this structured project overview directly inside your Google Drive as a fully editable, perfectly organized Google Document. 
+                                </p>
+
+                                {createdDocUrl ? (
+                                  <div className="space-y-3 pt-2">
+                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs flex items-center justify-center gap-2">
+                                      <CheckCircle className="w-4 h-4 shrink-0" />
+                                      Doc Published to Google Drive!
+                                    </div>
+                                    <a
+                                      href={createdDocUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="w-full py-3 bg-cyan-500 hover:bg-cyan-455 text-black hover:bg-cyan-400 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer shadow-lg shadow-cyan-500/20"
+                                    >
+                                      <FileText className="w-4 h-4" /> Open In Google Docs
+                                    </a>
+                                  </div>
+                                ) : (
+                                  <div className="pt-2">
+                                    <button
+                                      onClick={handleCreateDoc}
+                                      disabled={isCreatingDoc || !token}
+                                      className="w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/20"
+                                    >
+                                      {isCreatingDoc ? (
+                                        <>
+                                          <Loader2 className="w-4 h-4 animate-spin text-black" /> Creating Document...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Sparkles className="w-4 h-4 text-black animate-pulse" /> Create Google Doc
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
+                                )}
+
+                                {docError && (
+                                  <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs text-left leading-relaxed font-mono">
+                                    ⚠️ {docError}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </motion.div>
